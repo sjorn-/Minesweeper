@@ -26,9 +26,12 @@ main = do
   let (w, h) = getDimensions (args)
   mines <- (placeMines (w, h) 3)
   putStrLn (show mines)
-  score <- gameLoop (createGrid (w, h)) mines
-  putStrLn (show mines)
-  if (score == 1) then putStrLn ("You won!") else putStrLn ("You lose!")
+  -- score <- gameLoop (createGrid (w, h)) mines
+  x <- (gameLoop mines)-- (startState w h)
+  putStrLn (show x)
+  -- if (score) then putStrLn ("You won!") else putStrLn ("You lose!")
+  
+startState w h = (True, (createGrid (w, h)))
   
 getDimensions [x] = (read x, read x) 
 getDimensions [x, y] = (read x, read y)
@@ -63,28 +66,45 @@ splitStr x xs = if length str > 0 then str : splitStr x (drop (n+1) xs) else spl
 --         mine = (xs !! (y - 1) !! (x - 1))
 --     finished = (sum (map (length . filter (\c -> c == 'F' || c == 'X')) ys)) == (sum (map (length . filter (\c -> c == 'M')) xs))
 
--- gameLoop :: Grid -> Grid -> IO Int
-gameLoop mines = do
+gameLoop :: Grid -> State (Bool, Grid) Bool
+gameLoop mines@(Grid xs) = do
   -- clearScreen
-  (_, uncovered) <- get
-  putStrLn (show uncovered)
-  move <- getLine
-  let moveType = splitStr ' ' move
-  let x = read (moveType !! 1)
-  let y = read (moveType !! 2)
-  a <- case (head moveType) of
-    "F" -> (gameLoop (flag (x, y)) mines)
-    "S" -> (sweep (x, y))-- (gameLoop (sweep (x, y)) mines)
-  if finished then return 1 else return a
+  (score, uncovered) <- get
+  if (finished uncovered) then do 
+    put (True, uncovered)
+    return True
+  else if (not score) then do
+    put (False, uncovered)
+    return False
+  else do
+    -- putStrLn (show uncovered) <---------
+    -- move <- getLine <---------
+    let moveType = splitStr ' ' move
+    let x = read (moveType !! 1)
+    let y = read (moveType !! 2)
+    -- if (head moveType) == "F" then
+    --   put (score, (gameLoop (flag (x, y) uncovered) mines))
+    -- else if (head moveType) == "S" then
+    --   let this = (sweep (x, y) uncovered) in if this == 0 then put (False, uncovered) else put (True, this)
+    -- else  error "Invalid"
+    -- return 0
+    case (head moveType) of
+      "F" -> put (score, (flag (x, y) uncovered))
+      "S" -> let this = (sweep (x, y) uncovered) in 
+              if empty (this)
+                then put (False, uncovered) 
+                else put (True, this)  -- (gameLoop (sweep (x, y)) mines)
+      --  _  -> error "Invalid Input"
+    gameLoop mines
   where
-    (Grid xs) = mines
-    (Grid ys) = uncovered
-    flag (x, y) = (set (x, y) 'F' uncovered)--(Grid (let (xs:ys) = splitAt y [] ))
-    sweep (x, y) = if mine == 'M' then return 0 else gameLoop (set (x, y) mine uncovered) mines
+    flag (x, y) uncovered = (set (x, y) 'F' uncovered)--(Grid (let (xs:ys) = splitAt y [] ))
+    sweep (x, y) uncovered = if mine == 'M' then (Grid []) else (set (x, y) mine uncovered)
       where
         mine = (xs !! (y - 1) !! (x - 1))
-    finished = (sum (map (length . filter (\c -> c == 'F' || c == 'X')) ys)) == (sum (map (length . filter (\c -> c == 'M')) xs))
+    finished (Grid ys) = (sum (map (length . filter (\c -> c == 'F' || c == 'X')) ys)) == (sum (map (length . filter (\c -> c == 'M')) xs))
   
+empty (Grid []) = True
+empty xs = False
   
 set (x, y) c (Grid xs) = (Grid (as ++ [r'++(c:b')] ++ bs))
   where
