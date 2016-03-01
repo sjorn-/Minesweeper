@@ -18,7 +18,7 @@ instance Show Grid where
       fix = map (\x -> if x == '0' then ' ' else x)
 
 main = do
-  args <- getArgs 
+  args <- getArgs
   setTitle "Minesweeper"
   clearScreen
   let (w, h) = getDimensions (args)
@@ -27,18 +27,18 @@ main = do
   x <- (gameLoop mines (startState w h))
   putStrLn (show mines)
   if (x) then putStrLn ("You won!") else putStrLn ("You lose!")
-  
+
 startState w h = (True, (createGrid (w, h)))
-  
-getDimensions [x] = (read x, read x) 
+
+getDimensions [x] = (read x, read x)
 getDimensions [x, y] = (read x, read y)
 getDimensions xs = error "Enter two digits"
 
-splitStr _ [] = []  
-splitStr x xs = if length str > 0 then str : splitStr x (drop (n+1) xs) else splitStr x (drop (n+1) xs) 
-  where 
-    n = length (takeWhile (/=x) xs)
-    str = take n xs
+-- splitStr _ [] = []
+-- splitStr x xs = if length str > 0 then str : splitStr x (drop (n+1) xs) else splitStr x (drop (n+1) xs)
+--   where
+--     n = length (takeWhile (/=x) xs)
+--     str = take n xs
 
 gameLoop mines@(Grid xs) state = do
   putStrLn (show (snd state))
@@ -46,7 +46,7 @@ gameLoop mines@(Grid xs) state = do
   else if (finished) then return True
   else do
     move <- getLine
-    let moveType = splitStr ' ' move
+    let moveType = words move
     let x = read (moveType !! 1)
     let y = read (moveType !! 2)
     let newState = snd (runState (gameStep mines ((head . head) moveType, (x, y))) state)
@@ -54,46 +54,46 @@ gameLoop mines@(Grid xs) state = do
   where
     (Grid ys) = snd state
     finished = (sum (map (length . filter (\c -> c == 'F' || c == 'X')) ys)) == (sum (map (length . filter (\c -> c == 'M')) xs))
-  
+
 gameStep :: Grid -> (Char, (Int, Int)) -> State (Bool, Grid) ()
 gameStep mines@(Grid xs) (moveType, (x, y)) = do
   (score, uncovered) <- get
   case (moveType) of
     'F' -> put (score, (flag uncovered))
-    'S' -> let this = (sweep uncovered) in 
+    'S' -> let this = (sweep uncovered) in
             if empty (this)
-              then put (False, uncovered) 
+              then put (False, uncovered)
               else put (True, this)
     _  -> put (score, uncovered)
   where
-    flag uncovered = (set (x, y) 'F' uncovered)--(Grid (let (xs:ys) = splitAt y [] ))
-    sweep uncovered = if mine == 'M' then (Grid []) else (set (x, y) mine uncovered)
-      where
-        mine = (xs !! (y - 1) !! (x - 1))
-  
+    flag uncovered = if chosen uncovered == 'X' then (set (x, y) 'F' uncovered) else do uncovered--(Grid (let (xs:ys) = splitAt y [] ))
+    sweep uncovered = if chosen uncovered /= 'F' then if mine == 'M' then (Grid []) else (set (x, y) mine uncovered) else uncovered
+    mine = (xs !! (y - 1) !! (x - 1))
+    chosen (Grid ys) = (ys !! (y - 1) !! (x - 1))
+
 empty (Grid []) = True
 empty xs = False
-  
+
 set (x, y) c (Grid xs) = (Grid (as ++ [r'++(c:b')] ++ bs))
   where
     (as,r:bs) = splitAt (y - 1) xs
     (r',_:b') = splitAt (x - 1) r
-  
+
 minePositions :: (MonadRandom m) => (Int, Int) -> Int -> m [(Int, Int)]
 minePositions (w, h) n = do
   xs <- getRandomRs(0, w - 1 :: Int)
   ys <- getRandomRs(0, h - 1 :: Int)
   return (take n (nub (zip xs ys)))
 
-bundle n [] = []  
+bundle n [] = []
 bundle n xs = take n xs : bundle n (drop n xs)
 
-placeMines :: (MonadRandom m) => (Int, Int) -> Int -> m Grid  
+placeMines :: (MonadRandom m) => (Int, Int) -> Int -> m Grid
 placeMines (w, h) n = do
   ps <- minePositions (w, h) n
   let grid = [c | y <- [0..h - 1], x <- [0..w - 1], let c = if (x,y) `elem` ps then 'M' else head (show (numAround ps x y))]
   return (Grid (bundle w grid))
-    where 
+    where
       numAround ps x y = length (intersect ps [(a, b) | a <- [x-1..x+1], b <- [y-1..y+1], a /= x || b /= y, a >= 0, b >= 0, a <= w, b <= h])
 
 createGrid :: (Int, Int) -> Grid
