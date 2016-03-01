@@ -43,8 +43,8 @@ gameLoop mines@(Grid xs) state = do
     putStrLn (show (snd state))
     move <- getLine
     let moveType = words move
-    let x = read (moveType !! 1)
-    let y = read (moveType !! 2)
+    let x = read (moveType !! 2)
+    let y = read (moveType !! 1)
     let newState = snd (runState (gameStep mines ((head . head) moveType, (x, y))) state)
     gameLoop mines newState
   where
@@ -62,16 +62,10 @@ gameStep mines@(Grid xs) (moveType, (x, y)) = do
               else put (True, this)
     _  -> put (score, uncovered)
   where
-    flag uncovered = if chosen uncovered == 'X' then (set (x, y) 'F' uncovered) else do uncovered--(Grid (let (xs:ys) = splitAt y [] ))
-    -- sweep uncovered = if chosen uncovered /= 'F'
-    --                     then
-    --                       if mine == 'M'
-    --                         then (Grid [])
-    --                         else
-    --                           if (mine /= '0')
-    --                             then (set (x, y) mine uncovered)
-    --                             else (checkSurrounding (x, y) (set (x, y) mine uncovered) mines)
-    --                     else uncovered
+    flag uncovered
+      | chosen uncovered == 'X' = (set (x, y) 'F' uncovered)
+      | chosen uncovered == 'F' = (set (x, y) 'X' uncovered)
+      | otherwise = uncovered
     sweep uncovered
       | not flagged && mine == 'M' = (Grid [])
       | not flagged && mine /= '0' = (set (x, y) mine uncovered)
