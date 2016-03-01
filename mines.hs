@@ -9,7 +9,7 @@ import System.Console.ANSI
 data Grid = Grid [[Char]]
 
 instance Show Grid where
-  show (Grid xs) = "\n" ++ intercalate "\n" (map out (zip (map show [1..]) (map fix xs))) ++ "\n\n" ++ xNumbers ++ "\n"
+  show (Grid xs) = "\n" ++ intercalate "\n" (map out (zip (map show [1..]) (map fix xs))) ++ "\n" ++ xNumbers ++ "\n"
     where
       out (n, ys) = spacePad 3 n ++ (concat ((map (\y -> take (seperationDistance) (repeat ' ')  ++ [y]) ys)))
       spacePad n x = take (((n-) . length) x) (repeat ' ') ++ (x)
@@ -63,15 +63,21 @@ gameStep mines@(Grid xs) (moveType, (x, y)) = do
     _  -> put (score, uncovered)
   where
     flag uncovered = if chosen uncovered == 'X' then (set (x, y) 'F' uncovered) else do uncovered--(Grid (let (xs:ys) = splitAt y [] ))
-    sweep uncovered = if chosen uncovered /= 'F'
-                        then
-                          if mine == 'M'
-                            then (Grid [])
-                            else
-                              if (mine /= '0')
-                                then (set (x, y) mine uncovered)
-                                else (checkSurrounding (x, y) (set (x, y) mine uncovered) mines)
-                        else uncovered
+    -- sweep uncovered = if chosen uncovered /= 'F'
+    --                     then
+    --                       if mine == 'M'
+    --                         then (Grid [])
+    --                         else
+    --                           if (mine /= '0')
+    --                             then (set (x, y) mine uncovered)
+    --                             else (checkSurrounding (x, y) (set (x, y) mine uncovered) mines)
+    --                     else uncovered
+    sweep uncovered
+      | not flagged && mine == 'M' = (Grid [])
+      | not flagged && mine /= '0' = (set (x, y) mine uncovered)
+      | not flagged && otherwise = (checkSurrounding (x, y) (set (x, y) mine uncovered) mines)
+      | otherwise = uncovered
+      where flagged = chosen uncovered == 'F'
     mine = (xs !! (y - 1) !! (x - 1))
     chosen (Grid ys) = (ys !! (y - 1) !! (x - 1))
 
@@ -82,9 +88,11 @@ checkSurrounding (x, y) (Grid xs) mines@(Grid ys) = foldr f (Grid xs) [(a, b) | 
   where
     f (a, b) k
       | (xs !! (b - 1) !! (a - 1)) == '0' = k
-      | (ys !! (b - 1) !! (a - 1)) == '0' = checkSurrounding (a, b) (set (a, b) '0' k) mines
-      | (ys !! (b - 1) !! (a - 1)) == 'M' = k
-      | otherwise = (set (a, b) (ys !! (b - 1) !! (a - 1)) k)
+      | mine == '0' = checkSurrounding (a, b) (set (a, b) '0' k) mines
+      | mine == 'M' = k
+      | otherwise = (set (a, b) mine k)
+      where
+        mine = (ys !! (b - 1) !! (a - 1))
 
 set (x, y) c (Grid xs) = (Grid (as ++ [r'++(c:b')] ++ bs))
   where
