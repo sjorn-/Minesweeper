@@ -72,9 +72,10 @@ splitStr x xs = if length str > 0 then str : splitStr x (drop (n+1) xs) else spl
 --         mine = (xs !! (y - 1) !! (x - 1))
 --     finished = (sum (map (length . filter (\c -> c == 'F' || c == 'X')) ys)) == (sum (map (length . filter (\c -> c == 'M')) xs))
 
-gameLoop mines state = do
+gameLoop mines@(Grid xs) state = do
   putStrLn (show (snd state))
   if (not (fst state)) then return False
+  else if (finished) then return True
   else do
     move <- getLine
     let moveType = splitStr ' ' move
@@ -82,6 +83,9 @@ gameLoop mines state = do
     let y = read (moveType !! 2)
     let newState = snd (runState (gameStep mines ((head . head) moveType, (x, y))) state)
     gameLoop mines newState
+  where
+    (Grid ys) = snd state
+    finished = (sum (map (length . filter (\c -> c == 'F' || c == 'X')) ys)) == (sum (map (length . filter (\c -> c == 'M')) xs))
       
 
 -- This command runs in ghci:
@@ -90,21 +94,7 @@ gameLoop mines state = do
   
 gameStep :: Grid -> (Char, (Int, Int)) -> State (Bool, Grid) ()
 gameStep mines@(Grid xs) (moveType, (x, y)) = do
-  -- clearScreen
   (score, uncovered) <- get
-  -- if (finished uncovered) then do 
-  --   put (True, uncovered)
-  --   return True
-  -- else if (not score) then do
-  --   put (False, uncovered)
-  --   return False
-  -- else do
-    -- if (head moveType) == "F" then
-    --   put (score, (gameStep (flag (x, y) uncovered) mines))
-    -- else if (head moveType) == "S" then
-    --   let this = (sweep (x, y) uncovered) in if this == 0 then put (False, uncovered) else put (True, this)
-    -- else  error "Invalid"
-    -- return 0
   case (moveType) of
     'F' -> put (score, (flag uncovered))
     'S' -> let this = (sweep uncovered) in 
