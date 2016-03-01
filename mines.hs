@@ -23,8 +23,9 @@ main = do
   clearScreen
   let (w, h, n) = getDimensions (args)
   mines <- (placeMines (w, h) n)
-  putStrLn (show mines)
+  -- putStrLn (show mines)
   x <- (gameLoop mines (startState w h))
+  clearScreen
   putStrLn (show mines)
   if (x) then putStrLn ("You won!") else putStrLn ("You lose!")
 
@@ -35,10 +36,11 @@ getDimensions [x, y, n] = (read x, read y, read n)
 getDimensions xs = error "Enter three digits"
 
 gameLoop mines@(Grid xs) state = do
-  putStrLn (show (snd state))
   if (not (fst state)) then return False
   else if (finished) then return True
   else do
+    clearScreen
+    putStrLn (show (snd state))
     move <- getLine
     let moveType = words move
     let x = read (moveType !! 1)
@@ -61,13 +63,15 @@ gameStep mines@(Grid xs) (moveType, (x, y)) = do
     _  -> put (score, uncovered)
   where
     flag uncovered = if chosen uncovered == 'X' then (set (x, y) 'F' uncovered) else do uncovered--(Grid (let (xs:ys) = splitAt y [] ))
-    sweep uncovered = if chosen uncovered /= 'F' then
-      if mine == 'M'
-        then (Grid [])
-        else if (chosen uncovered /= '0')
-          then (set (x, y) mine uncovered)
-          else (checkSurrounding (x, y) (set (x, y) mine uncovered) mines)
-        else uncovered
+    sweep uncovered = if chosen uncovered /= 'F'
+                        then
+                          if mine == 'M'
+                            then (Grid [])
+                            else
+                              if (mine /= '0')
+                                then (set (x, y) mine uncovered)
+                                else (checkSurrounding (x, y) (set (x, y) mine uncovered) mines)
+                        else uncovered
     mine = (xs !! (y - 1) !! (x - 1))
     chosen (Grid ys) = (ys !! (y - 1) !! (x - 1))
 
@@ -81,7 +85,6 @@ checkSurrounding (x, y) (Grid xs) mines@(Grid ys) = foldr f (Grid xs) [(a, b) | 
       | (ys !! (b - 1) !! (a - 1)) == '0' = checkSurrounding (a, b) (set (a, b) '0' k) mines
       | (ys !! (b - 1) !! (a - 1)) == 'M' = k
       | otherwise = (set (a, b) (ys !! (b - 1) !! (a - 1)) k)
-  --map (\(a, b) -> if (xs !! (b - 1) !! (a - 1)) == '0' then checkSurrounding (a, b) (set (a, b) '0' (Grid xs)) else (set (a, b) (xs !! (b - 1) !! (a - 1)) (Grid xs))) [(a, b) | a <- [x-1..x+1], b <- [y-1..y+1], a /= x || b /= y, a >= 0, b >= 0, a <= length (head xs), b <= length xs]
 
 set (x, y) c (Grid xs) = (Grid (as ++ [r'++(c:b')] ++ bs))
   where
