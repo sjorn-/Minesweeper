@@ -11,28 +11,29 @@ import System.Console.ANSI
 data Grid = Grid [[Char]]
 
 instance Show Grid where
-  show (Grid xs) = "\n" ++ firstNumbers ++ "\n" ++ intercalate "\n" (map out (zip (map show [1..]) (map fix xs))) ++ "\n"
+  show (Grid xs) = "\n" ++ intercalate "\n" (map out (zip (map show [1..]) (map fix xs))) ++ "\n\n" ++ xNumbers ++ "\n"
     where
       out (n, ys) = spacePad 3 n ++ (concat ((map (\y -> take (seperationDistance) (repeat ' ')  ++ [y]) ys)))
       spacePad n x = take (((n-) . length) x) (repeat ' ') ++ (x)
-      firstNumbers = "    " ++ intercalate " " (map (\j -> spacePad seperationDistance (show j)) [1..length (head xs)])
+      xNumbers = "    " ++ intercalate " " (map (\j -> spacePad seperationDistance (show j)) [1..length (head xs)])
       seperationDistance = (length . show . length) (head xs)
       fix = map (\x -> if x == '0' then ' ' else x)
 
--- main = do
---   args <- getArgs 
---   setTitle "Minesweeper"
---   clearScreen
---   let (w, h) = getDimensions (args)
---   mines <- (placeMines (w, h) 3)
---   putStrLn (show mines)
---   -- score <- gameStep (createGrid (w, h)) mines
---   -- x <- (gameStep mines)-- (startState w h)
---   -- putStrLn (show x)
---   -- if (score) then putStrLn ("You won!") else putStrLn ("You lose!")
---   let x = (gameLoop mines (createGrid (w, h)) (startState w h))
---   -- if (x) then putStrLn ("You won!") else putStrLn ("You lose!")
---   putStrLn (show x)
+main = do
+  args <- getArgs 
+  setTitle "Minesweeper"
+  clearScreen
+  let (w, h) = getDimensions (args)
+  mines <- (placeMines (w, h) 3)
+  putStrLn (show mines)
+  -- score <- gameStep (createGrid (w, h)) mines
+  -- x <- (gameStep mines)-- (startState w h)
+  -- putStrLn (show x)
+  -- if (score) then putStrLn ("You won!") else putStrLn ("You lose!")
+  x <- (gameLoop mines (startState w h))
+  putStrLn (show mines)
+  -- if (x) then putStrLn ("You won!") else putStrLn ("You lose!")
+  putStrLn (show x)
   
 -- startState :: Int -> Int -> State Bool Grid
 -- startState w h = (do { put True; return (createGrid (w, h))})
@@ -71,7 +72,7 @@ splitStr x xs = if length str > 0 then str : splitStr x (drop (n+1) xs) else spl
 --         mine = (xs !! (y - 1) !! (x - 1))
 --     finished = (sum (map (length . filter (\c -> c == 'F' || c == 'X')) ys)) == (sum (map (length . filter (\c -> c == 'M')) xs))
 
-gameLoop mines uncovered state = do
+gameLoop mines state = do
   putStrLn (show (snd state))
   if (not (fst state)) then return False
   else do
@@ -80,7 +81,7 @@ gameLoop mines uncovered state = do
     let x = read (moveType !! 1)
     let y = read (moveType !! 2)
     let newState = snd (runState (gameStep mines ((head . head) moveType, (x, y))) state)
-    gameLoop mines (snd newState) newState
+    gameLoop mines newState
       
 
 -- This command runs in ghci:
