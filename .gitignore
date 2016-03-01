@@ -3,5 +3,5 @@ cabal.sandbox.config
 *.o
 *.hi
 *.save0
-./dist
-./.cabal-sandbox
+dist
+.cabal-sandbox
