@@ -1,10 +1,8 @@
 module Main where
 
-import Control.Monad
 import Control.Monad.Random
 import Control.Monad.State.Lazy
 import System.Environment
-import System.IO
 import Data.List
 import System.Console.ANSI
 
@@ -26,51 +24,21 @@ main = do
   let (w, h) = getDimensions (args)
   mines <- (placeMines (w, h) 3)
   putStrLn (show mines)
-  -- score <- gameStep (createGrid (w, h)) mines
-  -- x <- (gameStep mines)-- (startState w h)
-  -- putStrLn (show x)
-  -- if (score) then putStrLn ("You won!") else putStrLn ("You lose!")
   x <- (gameLoop mines (startState w h))
   putStrLn (show mines)
-  -- if (x) then putStrLn ("You won!") else putStrLn ("You lose!")
-  putStrLn (show x)
+  if (x) then putStrLn ("You won!") else putStrLn ("You lose!")
   
--- startState :: Int -> Int -> State Bool Grid
--- startState w h = (do { put True; return (createGrid (w, h))})
 startState w h = (True, (createGrid (w, h)))
   
 getDimensions [x] = (read x, read x) 
 getDimensions [x, y] = (read x, read y)
 getDimensions xs = error "Enter two digits"
 
-  
 splitStr _ [] = []  
 splitStr x xs = if length str > 0 then str : splitStr x (drop (n+1) xs) else splitStr x (drop (n+1) xs) 
   where 
     n = length (takeWhile (/=x) xs)
     str = take n xs
-    
--- gameStep :: Grid -> Grid -> IO Int
--- -- gameStep = do
--- gameStep uncovered mines = do
---   -- clearScreen
---   putStrLn (show uncovered)
---   move <- getLine
---   let moveType = splitStr ' ' move
---   let x = read (moveType !! 1)
---   let y = read (moveType !! 2)
---   a <- case (head moveType) of
---     "F" -> (gameStep (flag (x, y)) mines)
---     "S" -> (sweep (x, y))-- (gameStep (sweep (x, y)) mines)
---   if finished then return 1 else return a
---   where
---     (Grid xs) = mines
---     (Grid ys) = uncovered
---     flag (x, y) = (set (x, y) 'F' uncovered)--(Grid (let (xs:ys) = splitAt y [] ))
---     sweep (x, y) = if mine == 'M' then return 0 else gameStep (set (x, y) mine uncovered) mines
---       where
---         mine = (xs !! (y - 1) !! (x - 1))
---     finished = (sum (map (length . filter (\c -> c == 'F' || c == 'X')) ys)) == (sum (map (length . filter (\c -> c == 'M')) xs))
 
 gameLoop mines@(Grid xs) state = do
   putStrLn (show (snd state))
@@ -86,11 +54,6 @@ gameLoop mines@(Grid xs) state = do
   where
     (Grid ys) = snd state
     finished = (sum (map (length . filter (\c -> c == 'F' || c == 'X')) ys)) == (sum (map (length . filter (\c -> c == 'M')) xs))
-      
-
--- This command runs in ghci:
--- grid <- (placeMines (5,5) 10)
--- runState (gameStep grid ('F', (1, 1))) (startState 5 5)
   
 gameStep :: Grid -> (Char, (Int, Int)) -> State (Bool, Grid) ()
 gameStep mines@(Grid xs) (moveType, (x, y)) = do
@@ -100,14 +63,13 @@ gameStep mines@(Grid xs) (moveType, (x, y)) = do
     'S' -> let this = (sweep uncovered) in 
             if empty (this)
               then put (False, uncovered) 
-              else put (True, this)  -- (gameStep (sweep (x, y)) mines)
-    --  _  -> error "Invalid Input"
+              else put (True, this)
+    _  -> put (score, uncovered)
   where
     flag uncovered = (set (x, y) 'F' uncovered)--(Grid (let (xs:ys) = splitAt y [] ))
     sweep uncovered = if mine == 'M' then (Grid []) else (set (x, y) mine uncovered)
       where
         mine = (xs !! (y - 1) !! (x - 1))
-    -- finished (Grid ys) = (sum (map (length . filter (\c -> c == 'F' || c == 'X')) ys)) == (sum (map (length . filter (\c -> c == 'M')) xs))
   
 empty (Grid []) = True
 empty xs = False
@@ -116,10 +78,6 @@ set (x, y) c (Grid xs) = (Grid (as ++ [r'++(c:b')] ++ bs))
   where
     (as,r:bs) = splitAt (y - 1) xs
     (r',_:b') = splitAt (x - 1) r
-    
-
--- flag :: Grid -> (Int, Int) -> Grid
--- flag = undefined
   
 minePositions :: (MonadRandom m) => (Int, Int) -> Int -> m [(Int, Int)]
 minePositions (w, h) n = do
