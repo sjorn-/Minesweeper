@@ -5,9 +5,9 @@ import Control.Monad.State.Lazy
 import System.Environment
 import Data.List
 import System.Console.ANSI
--- import System.Console.Terminfo.Keys
 
 data Grid = Grid [[Char]]
+type Move = (Char, (Int, Int))
 
 instance Show Grid where
   show (Grid []) = "Game over."
@@ -19,6 +19,7 @@ instance Show Grid where
       seperationDistance = (length . show . length) (head xs)
       fix = map (\x -> if x == '0' then ' ' else x)
 
+main :: IO ()
 main = do
   args <- getArgs
   setTitle "Minesweeper"
@@ -31,12 +32,12 @@ main = do
   putStrLn (show mines)
   if (x) then putStrLn ("You won!") else putStrLn ("You lose!")
 
-startState w h = (True, (createGrid (w, h)))
-
+getDimensions :: [[Char]] -> (Int, Int, Int)
 getDimensions [x, n] = (read x, read x, read n)
 getDimensions [x, y, n] = (read x, read y, read n)
 getDimensions xs = error "Enter three digits"
 
+gameLoop :: (Int, Int) -> Grid -> [Move] -> IO Bool
 gameLoop size mines@(Grid xs) ms = do
   if ys == [] then return False
   else if finished then return True
@@ -52,7 +53,7 @@ gameLoop size mines@(Grid xs) ms = do
     (Grid ys) = last game
     finished = (sum (map (length . filter (\c -> c == 'F' || c == 'X')) ys)) == (sum (map (length . filter (\c -> c == 'M')) xs))
 
--- gameStep :: (Int, Int) -> Grid -> [(Char, (Int, Int))] -> [Grid]
+gameStep :: (Int, Int) -> Grid -> [Move] -> [Grid]
 gameStep (w, h) mines@(Grid xs) ms = scanl f (createGrid (w, h)) ms
   where
     f uncovered (moveType, (x, y)) =
@@ -74,9 +75,7 @@ gameStep (w, h) mines@(Grid xs) ms = scanl f (createGrid (w, h)) ms
         mine = (xs !! (y - 1) !! (x - 1))
         chosen (Grid ys) = (ys !! (y - 1) !! (x - 1))
 
-empty (Grid []) = True
-empty xs = False
-
+checkSurrounding :: (Int, Int) -> Grid -> Grid -> Grid
 checkSurrounding (x, y) (Grid xs) mines@(Grid ys) = foldr f (Grid xs) [(a, b) | a <- [x-1..x+1], b <- [y-1..y+1], a /= x || b /= y, a > 0, b > 0, a <= length (head xs), b <= length xs]
   where
     f (a, b) k
@@ -87,6 +86,7 @@ checkSurrounding (x, y) (Grid xs) mines@(Grid ys) = foldr f (Grid xs) [(a, b) | 
       where
         mine = (ys !! (b - 1) !! (a - 1))
 
+set :: (Int, Int) -> Char -> Grid -> Grid
 set (x, y) c (Grid xs) = (Grid (as ++ [r'++(c:b')] ++ bs))
   where
     (as,r:bs) = splitAt (y - 1) xs
@@ -98,6 +98,7 @@ minePositions (w, h) n = do
   ys <- getRandomRs(0, h - 1 :: Int)
   return (take n (nub (zip xs ys)))
 
+bundle :: Int -> [a] -> [[a]]
 bundle n [] = []
 bundle n xs = take n xs : bundle n (drop n xs)
 
