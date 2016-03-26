@@ -5,6 +5,7 @@ import Control.Monad.State.Lazy
 import System.Environment
 import Data.List
 import System.Console.ANSI
+import System.Console.Terminfo.Keys
 
 data Grid = Grid [[Char]]
 
