@@ -25,7 +25,7 @@ main = do
   let (w, h, n) = getDimensions (args)
   mines <- (placeMines (w, h) n)
   -- putStrLn (show mines)
-  x <- (gameLoop mines [])--(startState w h))
+  x <- (gameLoop (w, h) mines [])--(startState w h))
   clearScreen
   putStrLn (show mines)
   if (x) then putStrLn ("You won!") else putStrLn ("You lose!")
@@ -36,28 +36,23 @@ getDimensions [x, n] = (read x, read x, read n)
 getDimensions [x, y, n] = (read x, read y, read n)
 getDimensions xs = error "Enter three digits"
 
-gameLoop mines@(Grid xs) ms = do
+gameLoop size mines@(Grid xs) ms = do
   if ys == [] then return False
-  else if (finished) then return True
+  else if finished then return True
   else do
-    -- clearScreen
-    -- putStrLn (show (snd state))
+    clearScreen
+    putStrLn ((show . last) game)
     move <- getLine
     let moveType = words move
-    let x = read (moveType !! 2)
-    let y = read (moveType !! 1)
-    let move = ((head . head) moveType, (x, y))
-    gameLoop mines (ms ++ [move])
+    let move = ((head . head) moveType, (read (moveType !! 2), read (moveType !! 1)))
+    gameLoop size mines (ms ++ [move])
   where
-    game = gameStep mines ms
+    game = gameStep size mines ms
     (Grid ys) = last game
     finished = (sum (map (length . filter (\c -> c == 'F' || c == 'X')) ys)) == (sum (map (length . filter (\c -> c == 'M')) xs))
 
-w = 10
-h = 10
-
-gameStep :: Grid -> [(Char, (Int, Int))] -> [Grid]
-gameStep mines@(Grid xs) ms = scanl f (createGrid (w, h)) ms
+-- gameStep :: (Int, Int) -> Grid -> [(Char, (Int, Int))] -> [Grid]
+gameStep (w, h) mines@(Grid xs) ms = scanl f (createGrid (w, h)) ms
   where
     f uncovered (moveType, (x, y)) =
       case (moveType) of
@@ -77,30 +72,6 @@ gameStep mines@(Grid xs) ms = scanl f (createGrid (w, h)) ms
           where flagged = chosen uncovered == 'F'
         mine = (xs !! (y - 1) !! (x - 1))
         chosen (Grid ys) = (ys !! (y - 1) !! (x - 1))
-
--- gameStep :: Grid -> (Char, (Int, Int)) -> State (Bool, Grid) ()
--- gameStep mines@(Grid xs) (moveType, (x, y)) = do
---   (score, uncovered) <- get
-  -- case (moveType) of
-  --   'F' -> put (score, (flag uncovered))
-  --   'S' -> let this = (sweep uncovered) in
-  --           if empty (this)
-  --             then put (False, uncovered)
-  --             else put (True, this)
-  --   _  -> put (score, uncovered)
-  -- where
-  --   flag uncovered
-  --     | chosen uncovered == 'X' = (set (x, y) 'F' uncovered)
-  --     | chosen uncovered == 'F' = (set (x, y) 'X' uncovered)
-  --     | otherwise = uncovered
-  --   sweep uncovered
-  --     | not flagged && mine == 'M' = (Grid [])
-  --     | not flagged && mine /= '0' = (set (x, y) mine uncovered)
-  --     | not flagged && otherwise = (checkSurrounding (x, y) (set (x, y) mine uncovered) mines)
-  --     | otherwise = uncovered
-  --     where flagged = chosen uncovered == 'F'
-  --   mine = (xs !! (y - 1) !! (x - 1))
-  --   chosen (Grid ys) = (ys !! (y - 1) !! (x - 1))
 
 empty (Grid []) = True
 empty xs = False
