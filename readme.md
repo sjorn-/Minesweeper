@@ -1,4 +1,4 @@
-#Minesweaper
+#Minesweeper
 
 This is a minesweeper clone that runs in the terminal, coded in haskell.
 
